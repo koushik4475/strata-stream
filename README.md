@@ -1,3 +1,8 @@
+# StrataStream | Kafka-Compatible Streaming Broker with S3 and MinIO Tiered Storage
+
+StrataStream is a Go-based streaming broker project focused on Kafka-protocol compatibility and tiered storage for event data. Its documented architecture combines partitioned message handling with object-storage integration for S3-compatible services such as MinIO. Explore the quick start and verification steps to run the broker locally and test publish/consume and storage-tiering workflows.
+
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/ER-brocode/strata-stream/main/assets/strata_stream_banner.svg" alt="StrataStream Banner" width="100%"/>
 </p>
@@ -65,10 +70,7 @@
 ### 1. Build & Run Broker Locally
 
 ```bash
-# StrataStream | Kafka-Compatible Streaming Broker with S3 and MinIO Tiered Storage
-
-StrataStream is a Go-based streaming broker project focused on Kafka-protocol compatibility and tiered storage for event data. Its documented architecture combines partitioned message handling with object-storage integration for S3-compatible services such as MinIO. Explore the quick start and verification steps to run the broker locally and test publish/consume and storage-tiering workflows.
-
+# Clone repository
 git clone https://github.com/ER-brocode/strata-stream.git
 cd strata-stream
 
