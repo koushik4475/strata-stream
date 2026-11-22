@@ -126,6 +126,7 @@ func TestDecodeFetchResponseRejectsInvalidLengths(t *testing.T) {
 				writeInt64(buf, 0)
 				writeInt64(buf, 0)
 				writeInt32(buf, -2)
+				writeInt32(buf, 0)
 			}),
 		},
 		{
@@ -134,6 +135,7 @@ func TestDecodeFetchResponseRejectsInvalidLengths(t *testing.T) {
 				writeInt64(buf, 0)
 				writeInt64(buf, 0)
 				writeInt32(buf, 100)
+				writeInt32(buf, 0)
 			}),
 		},
 		{
