@@ -244,7 +244,10 @@ func (c *WireCodec) DecodeFetchRequest(r *bytes.Reader) (*FetchRequest, error) {
 	if err := binary.Read(r, binary.BigEndian, &topicLen); err != nil {
 		return nil, err
 	}
-	topicBytes := make([]byte, topicLen)
+	if topicLen < 0 || int(topicLen) > r.Len() {
+		return nil, errors.New("invalid topic length")
+	}
+	topicBytes := make([]byte, int(topicLen))
 	if _, err := io.ReadFull(r, topicBytes); err != nil {
 		return nil, err
 	}
