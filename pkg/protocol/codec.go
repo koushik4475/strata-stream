@@ -123,6 +123,10 @@ func (c *WireCodec) DecodeRequestHeader(r *bytes.Reader) (*RequestHeader, error)
 		return nil, err
 	}
 
+	if clientIDLen < -1 || int(clientIDLen) > r.Len() {
+		return nil, errors.New("invalid client ID length")
+	}
+
 	var clientID string
 	if clientIDLen > 0 {
 		cidBytes := make([]byte, clientIDLen)
@@ -151,7 +155,10 @@ func (c *WireCodec) DecodeProduceRequest(r *bytes.Reader) (*ProduceRequest, erro
 	if err := binary.Read(r, binary.BigEndian, &topicLen); err != nil {
 		return nil, err
 	}
-	topicBytes := make([]byte, topicLen)
+	if topicLen < 0 || int(topicLen) > r.Len() {
+		return nil, errors.New("invalid topic length")
+	}
+	topicBytes := make([]byte, int(topicLen))
 	if _, err := io.ReadFull(r, topicBytes); err != nil {
 		return nil, err
 	}
@@ -166,12 +173,20 @@ func (c *WireCodec) DecodeProduceRequest(r *bytes.Reader) (*ProduceRequest, erro
 	if err := binary.Read(r, binary.BigEndian, &numMsgs); err != nil {
 		return nil, err
 	}
+	// Every message needs at least two int32 length prefixes. Bound the
+	// allocation by the bytes remaining in this already size-limited frame.
+	if numMsgs < 0 || int64(numMsgs) > int64(r.Len()/8) {
+		return nil, errors.New("invalid produce message count")
+	}
 
-	messages := make([]ProduceMessage, 0, numMsgs)
+	messages := make([]ProduceMessage, 0, int(numMsgs))
 	for i := int32(0); i < numMsgs; i++ {
 		var keyLen int32
 		if err := binary.Read(r, binary.BigEndian, &keyLen); err != nil {
 			return nil, err
+		}
+		if keyLen < -1 || int64(keyLen) > int64(r.Len()) {
+			return nil, errors.New("invalid produce key length")
 		}
 		var key []byte
 		if keyLen > 0 {
@@ -184,6 +199,9 @@ func (c *WireCodec) DecodeProduceRequest(r *bytes.Reader) (*ProduceRequest, erro
 		var valLen int32
 		if err := binary.Read(r, binary.BigEndian, &valLen); err != nil {
 			return nil, err
+		}
+		if valLen < -1 || int64(valLen) > int64(r.Len()) {
+			return nil, errors.New("invalid produce value length")
 		}
 		var val []byte
 		if valLen > 0 {
@@ -226,7 +244,10 @@ func (c *WireCodec) DecodeFetchRequest(r *bytes.Reader) (*FetchRequest, error) {
 	if err := binary.Read(r, binary.BigEndian, &topicLen); err != nil {
 		return nil, err
 	}
-	topicBytes := make([]byte, topicLen)
+	if topicLen < 0 || int(topicLen) > r.Len() {
+		return nil, errors.New("invalid topic length")
+	}
+	topicBytes := make([]byte, int(topicLen))
 	if _, err := io.ReadFull(r, topicBytes); err != nil {
 		return nil, err
 	}
