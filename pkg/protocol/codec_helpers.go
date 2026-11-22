@@ -77,7 +77,10 @@ func (c *WireCodec) DecodeFetchResponseBody(r *bytes.Reader) (*FetchResponse, er
 	if err := binary.Read(r, binary.BigEndian, &topicLen); err != nil {
 		return nil, err
 	}
-	topicBytes := make([]byte, topicLen)
+	if topicLen < 0 || int(topicLen) > r.Len() {
+		return nil, errors.New("invalid topic length")
+	}
+	topicBytes := make([]byte, int(topicLen))
 	if _, err := io.ReadFull(r, topicBytes); err != nil {
 		return nil, err
 	}
@@ -100,8 +103,12 @@ func (c *WireCodec) DecodeFetchResponseBody(r *bytes.Reader) (*FetchResponse, er
 	if err := binary.Read(r, binary.BigEndian, &numRecords); err != nil {
 		return nil, err
 	}
+	// A record needs at least offset, timestamp, key length, and value length.
+	if numRecords < 0 || int64(numRecords) > int64(r.Len()/24) {
+		return nil, errors.New("invalid fetch record count")
+	}
 
-	records := make([]FetchedRecord, 0, numRecords)
+	records := make([]FetchedRecord, 0, int(numRecords))
 	for i := int32(0); i < numRecords; i++ {
 		var offset, ts int64
 		if err := binary.Read(r, binary.BigEndian, &offset); err != nil {
@@ -115,6 +122,9 @@ func (c *WireCodec) DecodeFetchResponseBody(r *bytes.Reader) (*FetchResponse, er
 		if err := binary.Read(r, binary.BigEndian, &keyLen); err != nil {
 			return nil, err
 		}
+		if keyLen < -1 || int64(keyLen) > int64(r.Len()) {
+			return nil, errors.New("invalid fetch key length")
+		}
 		var key []byte
 		if keyLen > 0 {
 			key = make([]byte, keyLen)
@@ -126,6 +136,9 @@ func (c *WireCodec) DecodeFetchResponseBody(r *bytes.Reader) (*FetchResponse, er
 		var valLen int32
 		if err := binary.Read(r, binary.BigEndian, &valLen); err != nil {
 			return nil, err
+		}
+		if valLen < -1 || int64(valLen) > int64(r.Len()) {
+			return nil, errors.New("invalid fetch value length")
 		}
 		var val []byte
 		if valLen > 0 {
